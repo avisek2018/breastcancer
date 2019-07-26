@@ -1,0 +1,281 @@
+#
+# This is the user-interface definition of a Shiny web application. You can
+# run the application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+library(shiny)
+library(shinydashboard)
+library(tidyverse)
+library(DT)
+library(plotly)
+library(shinyjs)
+
+source("source.R")
+
+# appCSS <- "
+# 
+# #loading-content {
+#   position: absolute;
+#   background: #000000;
+#   opacity: 0.9;
+#   z-index: 100;
+#   left: 0;
+#   right: 0;
+#   height: 100%;
+#   text-align: center;
+#   color: #FFFFFF;
+# }
+# "
+
+ui <- dashboardPage(
+    
+    dashboardHeader(title = "ST 558 - Project 3 - Avisek Choudhury", titleWidth=500),
+    ## Sidebar content
+    dashboardSidebar(
+        sidebarMenu(
+            menuItem("About", tabName = "about", icon = icon("question")),
+            menuItem("Data", tabName = "data", icon = icon("database")),
+            menuItem("Unsupervised Learning", tabName = "unsuper", icon = icon("cogs")),
+            menuItem("Supervised Learning", tabName = "super", icon = icon("hornbill"), 
+                     menuSubItem('k-Nearest Neighbor', tabName = 'knn'), 
+                     menuSubItem('Logistic Regression', tabName = 'logistic'),
+                     startExpanded = TRUE)
+        )
+    ),
+    
+    ## Body content
+    dashboardBody(
+        
+        # useShinyjs(),
+        # inlineCSS(appCSS),
+        # # Loading message
+        # div(
+        #     id = "loading-content",
+        #     h2("Loading...")        ),
+        # 
+        # # The main app code goes here
+        # hidden(
+        
+        tabItems(
+            
+            # About the Application Tab
+            # First tab content
+            tabItem(tabName = "about",
+                    fluidRow(
+                        #add in latex functionality if needed
+                        withMathJax(),
+                        
+                        #two columns for each of the two items
+                        column(6,
+                               #Description of App
+                               h3("About the Dataset"),
+                               #box to contain description
+                               box(background="blue",width=12,
+                                    includeHTML("dataset.html")
+                        )
+                        ),
+                        column(6,
+                               #How to use the app
+                               h3("About the Application"),
+                               #box to contain description
+                               box(background="blue",width=12,
+                                   includeHTML("application.html")
+                               )
+                        )
+                    )
+            ),
+            
+            # Second tab content - Data Tab
+            tabItem(tabName = "data",
+                    fluidRow(
+                        column(3,
+                               box(width=12,title="Select predictors for Visualization",
+                                   
+                                   selectizeInput("predictor", "Predictor", selected = "Clump_Thickness", 
+                                                  choices = levels(as.factor(names(select(data, -Class))))),
+                                   
+                                   selectizeInput("diagram", "Diagram", selected = "Bar Chart", 
+                                                  choices = c("Bar Chart", "Histogram", "BoxPlot")),
+                                   conditionalPanel(condition = "input.diagram == 'Histogram' || input.diagram == 'Bar Chart'",
+                                                    selectizeInput("position", "Position", selected = "stack",
+                                                                   choices = c("dodge","stack"))),
+                                   conditionalPanel(condition = "input.diagram == 'Histogram'",
+                                                    checkboxInput("density", h6("Overlay Density Plot", style = "color:blue;")))
+                               ),
+                               box(width = 12, title = "Five Point Number Summary",
+                                   verbatimTextOutput("summary"))
+                        ),
+                        #Show a plot of the prior    
+                        column(9,
+                               tabsetPanel(type = "tabs",
+                                           tabPanel("Data Visualization", icon = icon("chart-line"),
+                                                    fluidRow(
+                                                        plotlyOutput("plot1"),
+                                                        br(),
+                                                        box(width = 7, title = "Boxplot of All Predictors",
+                                                            plotlyOutput("allboxplot")),
+                                                        box(width = 5, title = "Correlation Plot",
+                                                            plotlyOutput("corrplot"))
+                                                    )
+                                           ), 
+                                           tabPanel("Data Display", icon = icon("chalkboard"),
+                                                    fluidRow(
+                                                        br(),
+                                                        downloadButton("downloadData", "Download", 
+                                                                       style = "background-color:#3c8dbc; color:white" ),
+                                                        br(),
+                                                        br(),
+                                                        dataTableOutput("cancerdata")
+                                                    )
+                                           )
+                               )
+                        )
+                    )
+            ),
+            
+            #Application Tab
+            tabItem(tabName = "unsuper",
+                    h3("Principle Component Analysis"),
+                    br(),
+                    dataTableOutput("pcaresult"),
+                    fluidRow(
+                        column(2,
+                               box(width=12,title="Select PCs for Biplot",
+                                   selectizeInput("pcs1", "First PC", selected = "PC1", 
+                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2])))),
+                                   selectizeInput("pcs2", "Second PC", selected = "PC2", 
+                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2]))))
+                               )
+                        ),
+                        column(10,
+                               box(width = 5, title = "Biplot for Selected PCs",
+                                   plotlyOutput("biplot")
+                               ),
+                               box(width = 7, title = "Variability with Fewer Uncorrelated Variables",
+                                   plotOutput("varpcplot")
+                               )
+                        )
+                    )
+            ),
+            #kNN Clasifier Tab
+            tabItem(tabName = "knn",
+                    fluidRow(
+                        column(3,
+                               box(width=12, title=h4("Breast Cancer Classification w/kNN"),
+                                   h5(strong("Change k and Dataset to Reflect the Change Below"), style = "color:#3c8dbc"),
+                                   br(),
+                                   sliderInput("k",
+                                               "Number of Neighbors: ",
+                                               min = 1,
+                                               max = 30,
+                                               value = 5),
+                                   checkboxGroupInput("checkGroup", label = h4("Dataset Features: "), 
+                                                      choices = colnames(select(data, -Class)) , inline = F,
+                                                      selected = colnames(select(data, -Class)))
+                               ),
+                               box(width = 12, title = h4("Confusion Matrix"),
+                                   tableOutput('confusionMatrix'),
+                                   verbatimTextOutput("classError"))
+                        ),
+                        column(9,
+                               tabsetPanel(type = "tabs",
+                                           tabPanel("Classifier", icon = icon("chevron-circle-right"),
+                                                    fluidRow(
+                                                        box(width = 5, title = h4(strong("kNN Model Fit from 10-fold 
+                                                        Repeated CV with 3 Repetition")),
+                                                            verbatimTextOutput("knnfrom10Fold")),
+                                                        box(width = 7, 
+                                                            title = strong("kNN Accuracy Plot - From 10 fold Repeated CV"),
+                                                            plotlyOutput("knnAccuracy"),
+                                                            hr(),
+                                                            h4("Confusion Matrix from 10-fold Repeated CV"),
+                                                            tableOutput('confusionMatrix10'),
+                                                            verbatimTextOutput("classError10"))
+                                                    )
+                                           ),
+                                           tabPanel("Compare Accuracy", icon = icon("gitter"),
+                                                    # fluidRow(                           
+                                                    #     column(4, selectInput("featureDisplay_x", 
+                                                    #                           label = h4("X-Axis"), 
+                                                    #                           choices = colnames(select(data, -Class)),
+                                                    #                           selected = colnames(select(data, -Class))[1])),
+                                                    #     column(4, selectInput("featureDisplay_y", 
+                                                    #                           label = h4("Y-Axis"), 
+                                                    #                           choices = colnames(select(data, -Class)),
+                                                    #                           selected = colnames(select(data, -Class))[2]))
+                                                    #     
+                                                    # ),
+                                                    fluidRow(
+                                                        column(12, 
+                                                               h4("Left graph shows the Accuracy plot using all predictors 
+                                                                  using 10-fold repeated cross validation with 3 repetition 
+                                                                  and right graph shows the same but with selected parameters.
+                                                                  Please click the button below to re-draw the 
+                                                                  right plot. Everytime the selected parameter changes we
+                                                                  need to Click to re-draw the plot.", style = "color:#3c8dbc"),
+                                                               br(),
+                                                               h4(strong("It's a 10-fold Repeated CV so it might take some time 
+                                                                         to draw after the Click!"), style = "color:#3c8dbc"),
+                                                               hr()
+                                                        )
+                                                    ),
+                                                    fluidRow(
+                                                        column(6, 
+                                                               br(),
+                                                               br(),
+                                                               h4(strong("Accuracy Plot with 10-fold Repeated CV 
+                                                                         Using ALL Predictors")),
+                                                               plotlyOutput("knnAccPlot1")
+                                                        ),
+                                                        column(6,
+                                                               actionButton("plotAcc", icon = icon("arrow-alt-circle-right"),
+                                                                            " Plot Accuracy Using Selected Predictors",
+                                                                            style = "background-color:#3c8dbc; color: white"),
+                                                               h4(strong("Accuracy Plot with 
+                                                                         10-fold Repeated CV Using SELECTED Predictors")),
+                                                               plotlyOutput("knnAccPlot2")
+                                                        )
+                                                    )
+                                                    # fluidRow(
+                                                    #     column(12,
+                                                    #            plotlyOutput("scatterPlotAB")
+                                                    #     )
+                                                    # )
+                                           )
+                               )
+                        )
+                    )
+            ),
+            #Logistic Regression Tab
+            tabItem(tabName = "logistic",
+                    fluidRow(
+                        column(3,
+                               box(width=12, title=h4(strong("Breast Cancer Classification w/Logistic Regression")),
+                                   h5(strong("Change Dataset to Reflect the Change"), style = "color:#3c8dbc"),
+                                   br(),
+                                   checkboxGroupInput("checkGroupLog", label = h4("Dataset Features: "), 
+                                                      choices = colnames(select(data, -Class)) , inline = F,
+                                                      selected = colnames(select(data, -Class)))
+                               )
+                               # box(width = 12, title = h4("Confusion Matrix")
+                               # )
+                        ),
+                        column(9,
+                               box(width=12, title = h4(strong("Regression Model Output")),
+                                   verbatimTextOutput("logRegOut"),
+                                   hr(),
+                                   h4(strong("Confusion Matrix from Logistic Regression")),
+                                   br(),
+                                   tableOutput('confusionMatrixLog'),
+                                   verbatimTextOutput("classErrorLog"))
+                        )
+                    )
+                    
+            )
+        )
+        # ) End hidden
+    )
+)
