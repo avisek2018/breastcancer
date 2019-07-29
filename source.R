@@ -2,7 +2,7 @@ library(caret)
 library(RColorBrewer)
 
 #Read Data and massage
-data <- read_delim("C:/Users/Avisek/Downloads/ST558/Project3/breast-cancer-wisconsin.data", delim = ",", col_names = FALSE)
+data <- read_delim("breast-cancer-wisconsin.data", delim = ",", col_names = FALSE)
 colnames(data) <- c("id_number", "Clump_Thickness", "Unif_Cell_Size", "Unif_Cell_Shape", "Marg_Adh", "Single_Ep_Cell_Size", "Bare_Nuclei", "Bland_Chromatin", "Normal_Nucleoli", "Mitoses", "Class")
 data[data == '?'] <- NA
 data <- data %>% drop_na()
