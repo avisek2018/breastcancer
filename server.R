@@ -40,7 +40,7 @@ server <- function(input, output, session) {
     })
     
     
-    #create plot
+    #Generate plot for Data tab
     output$plot1 <- renderPlotly({
         xValue <- input$predictor
         #print(xValue)
@@ -64,7 +64,7 @@ server <- function(input, output, session) {
             ggplotly(g)
         }
     })
-    
+    #Numerical Summary for the selected predictor
     output$summary <- renderPrint({
         summary(data[input$predictor])
     })
@@ -78,6 +78,7 @@ server <- function(input, output, session) {
     #                                                         lwd = 1, aes(group = Class, col = Class))
     # })
     
+    #Boxplot for all predictors together
     output$allboxplot <- renderPlotly({
         df.m <- melt(data, id.vars = "Class")
         df.m <- df.m %>% drop_na()
@@ -88,6 +89,7 @@ server <- function(input, output, session) {
         ggplotly(g)
     })
     
+    #Correlation plot 
     output$corrplot <- renderPlotly({
         #GGally::ggcorr ((select(data, -Class)))
         corrtest <- cor(select(data, Clump_Thickness, Unif_Cell_Size, Unif_Cell_Shape, Marg_Adh, Single_Ep_Cell_Size, 
@@ -117,15 +119,18 @@ server <- function(input, output, session) {
         }
     )
     
+    #Datatable
     output$cancerdata <- renderDataTable ({
         data
     })
     
+    #Display the PCs in data table
     output$pcaresult <- renderDataTable ({
         pcRound <- round(PCs$rotation,3)
         datatable(as.data.frame(pcRound), rownames= TRUE)
     })
     
+    #Biplot for PCs
     output$biplot <- renderPlotly({
         simpleBiplot <- ggbiplot(PCs, choices = c(as.numeric(substr(input$pcs1,3,3)), 
                                                   as.numeric(substr(input$pcs2,3,3))), 
@@ -142,13 +147,17 @@ server <- function(input, output, session) {
     })
     
     
-    
+    #Update and calculate kNN model depending on the selection
     observe({
         
-        validate(
-            need(!is.null(input$checkGroup) , 
-                 'Check at least one Predictor!')
-        )
+        # validate(
+        #     need(!is.null(input$checkGroup) , 
+        #          'Check at least one Predictor!')
+        # )
+        if(is.null(input$checkGroup)){
+            showNotification('Check at least one Predictor!', duration = 5, type = "warning")
+            return()
+        }
         
         set.seed(100)
         knn.pred <- knn(data.frame(trainData[,input$checkGroup]),
@@ -174,10 +183,12 @@ server <- function(input, output, session) {
         
     })
     
+    #Display the kNN Summary from 10-fold repeated CV
     output$knnfrom10Fold <- renderPrint({
         knn.model
     })
     
+    #kNN Accuracy Plot
     output$knnAccuracy <- renderPlotly ({
         f <- list(
             family = "Courier New, monospace",
@@ -249,7 +260,7 @@ server <- function(input, output, session) {
     #         
     #     })
     #})
-    
+    #Plot the accuracy from all predictors and selected predictors from 10-fold repeated CV
         output$knnAccPlot1 <- renderPlotly({
             f <- list(
                 family = "Courier New, monospace",
@@ -320,21 +331,25 @@ server <- function(input, output, session) {
             })
         })
             
-    
+        #Calculate logistic regression.
         observe({
             
-            validate(
-                need(!is.null(input$checkGroupLog) , 
-                     'Check at least one Predictor!')
-            )
+            # validate(
+            #     need(!is.null(input$checkGroupLog) , 
+            #          'Check at least one Predictor!')
+            # )
+            if(is.null(input$checkGroupLog)){
+                showNotification('Check at least one Predictor!', duration = 5, type = "warning")
+                return()
+            }
             
             trainSet <- data.frame(trainData[,input$checkGroupLog])
             testSet <-  data.frame(testData[,input$checkGroupLog])
             
             glm.model <- glm(trainData$Class ~., data = trainSet, family = "binomial")
             glm.pred <- predict(glm.model, newdata = testSet, type = "response")
-            glm.prob <- ifelse(glm.pred > 0.5, 1, 0)
-            tbl1 <- table(testData$Class, glm.pred > 0.5)
+            glm.prob <- ifelse(glm.pred > input$threshold, 1, 0)
+            tbl1 <- table(testData$Class, glm.pred > input$threshold)
             
             truePositive.log    <- sum(glm.prob == 1 & testData$Class == 1)
             falsePositive.log   <- sum(glm.prob == 1 & testData$Class == 0)
@@ -351,9 +366,9 @@ server <- function(input, output, session) {
                                                  str2 <- paste("Classification Error = ",  
                                                                round(1 - sum(diag(tbl1))/sum(tbl1),3))
                                                  str3 <- paste("Sensitivity = ", round((truePositive.log/
-                                                                                    (truePositive.log + falsePositive.log)),3) )
+                                                                                    (truePositive.log + falseNegative.log)),3) )
                                                  str4 <- paste("Specificity = ", round((trueNegative.log/
-                                                                                    (trueNegative.log + falseNegative.log)),3))
+                                                                                    (trueNegative.log + falsePositive.log)),3))
                                                  paste(str1, str2, str3, str4, sep = "\n")
                                                  })
             

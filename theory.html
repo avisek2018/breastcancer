@@ -1,0 +1,36 @@
+<script type="text/javascript"
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<h3> What is Principal Component analysis? <h3>
+<h4>Principal component analysis or PCA is a unsupervised learning method which works by dimension reduction technique.
+If we have p variables, they have some joint variability or correlation. PCA looks for linear combination of p variables which account for most of the variability.
+Usually variability can be represent by m PCs where m < p
+<br>Goal: Obtain the linear combination of variables which accounts for the largest amount of variablility. Find 
+<br>
+$$z_{i1} = \phi_{11}x_{i1} + \phi_{21}x_{i2} + ...... + \phi_{p1}x_{ip}$$
+values so that the set of z's has the largest variance.
+Constraint: $$ \sum_{j=1}^{p}\phi_{j1}^2 = 1 $$
+</h4>
+
+<h3>What is k-Nearest Neighbor?</h3>
+<h4>K nearest neighbors is a simple algorithm that stores all available cases and classifies new cases based on a similarity measure (e.g., distance functions). 
+kNN has been used in statistical estimation and pattern recognition. A case is classified by a majority vote of its neighbors, with the case being assigned to the class most 
+common amongst its k nearest neighbors measured by a distance function. If k = 1, then the case is simply assigned to the class of its nearest neighbor. 
+Euclidean Distance: $$ \sqrt{\sum_{i=1}^{k} {(x_i-y_i)}^2} $$ </h4>
+
+<h3> What is Logistic Regression? <h3>
+
+<h4>It’s an extension of linear regression where the dependent variable is categorical. It predicts the probability of the outcome variable.
+Logistic regression can be binomial or multinomial. In the binomial / binary logistic regression, the outcome can have only two types of values e.g. “Yes” or “No”. 
+Multinomial logistic refers to cases where the outcome can have three or more possible types of values (e.g., “good” vs. “very good” vs. “best” ). 
+Generally, the outcome is coded as “0″ and “1″ in binary logistic regression. 
+
+Logistic Response Function:
+$$P(y = 1) = \frac{1}{1+e^{-(\beta_0+\beta_1 x_1+\beta_2 x_2+....+\beta_k x_k)}}$$
+
+Positive values are predictive of class 1
+Negative values are predictive of class 0
+The coefficients, or β values, are selected to maximize the likelihood of predicting a high probability for observations actually belonging to class 1 and predicting a low probability for observations actually belonging to class 0. 
+The output of this function is always between 0 and 1
+</h4>
