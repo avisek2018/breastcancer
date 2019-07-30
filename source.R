@@ -11,6 +11,10 @@ data <- data %>% select(-id_number)
 data$Class <- ifelse(data$Class == 4, 1, 0)
 data$Class <- as.factor(data$Class)
 
+dataDisp <- data
+dataDisp['Category'] <- ifelse(dataDisp$Class ==1, "Malignant", "Benign")
+dataDisp$Category <- as.factor(dataDisp$Category)
+
 #PCA Analysis
   PCs <- prcomp(select(data, -Class), center = TRUE, scale = TRUE)
   
