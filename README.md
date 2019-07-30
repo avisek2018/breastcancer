@@ -1,2 +1,5 @@
-# breastcancer
-Project 3 of ST558 using Breast Cancer data set from UCI Repository
+To start this Shiny app from RStudio run the following commands:
+
+library(shiny)
+
+runGitHub('avisek2018/breastcancer')
