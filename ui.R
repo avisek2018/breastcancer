@@ -11,7 +11,6 @@ library(shinydashboard)
 library(tidyverse)
 library(DT)
 library(plotly)
-#library(shinyjs)
 library(shinycssloaders)
 
 source("source.R")
@@ -35,16 +34,6 @@ ui <- dashboardPage(
     
     ## Body content
     dashboardBody(
-        
-        # useShinyjs(),
-        # inlineCSS(appCSS),
-        # # Loading message
-        # div(
-        #     id = "loading-content",
-        #     h2("Loading...")        ),
-        # 
-        # # The main app code goes here
-        # hidden(
         
         tabItems(
             
@@ -275,6 +264,5 @@ ui <- dashboardPage(
                     
             )
         )
-        # ) End hidden
     )
 )

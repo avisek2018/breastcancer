@@ -21,13 +21,6 @@ source("source.R")
 
 server <- function(input, output, session) {
     
-    # # Simulate work being done for 1 second
-    # Sys.sleep(5)
-    # 
-    # # Hide the loading message when the rest of the server function has executed
-    # hide(id = "loading-content", anim = TRUE, animType = "fade")   
-    # show("app-content")
-    
     newVar <- reactive({
         input$predictor
         input$diagram
@@ -44,25 +37,23 @@ server <- function(input, output, session) {
         xValue <- input$predictor
         #print(xValue)
         if (input$diagram == "Bar Chart"){
-            g <- ggplot(data = data, aes(x = pull(data, xValue)))
-            g <- g + geom_bar(aes(fill = Class), position = input$position) + 
-                labs(x = xValue, title = paste0("Bar Chart for ", xValue)) + 
-                scale_fill_discrete(labels = c("Non Malignant", "Malignant"))
+            g <- ggplot(data = dataDisp, aes(x = pull(dataDisp, xValue)))
+            g <- g + geom_bar(aes(fill = Category), position = input$position) + 
+                labs(x = xValue, title = paste0("Bar Chart for ", xValue)) 
             ggplotly(g)
         } else if (input$diagram == "Histogram"){
-            g <- ggplot(data = data, aes(x = pull(data, xValue))) + labs( x = xValue, title = paste0("Histogram for ", xValue))
+            g <- ggplot(data = dataDisp, aes(x = pull(dataDisp, xValue))) + 
+                labs( x = xValue, title = paste0("Histogram for ", xValue))
             if (input$density) {
-                g <- g + geom_histogram(bins = 20, aes(y = ..density.., fill = Class), position = input$position) + 
-                    geom_density(adjust = 0.25, alpha = 0.5, aes(fill=Class), position = input$position) + 
-                    scale_fill_discrete(labels = c("Non Malignant", "Malignant"))
+                g <- g + geom_histogram(bins = 20, aes(y = ..density.., fill = Category), position = input$position) + 
+                    geom_density(adjust = 0.25, alpha = 0.5, aes(fill=Category), position = input$position) 
                 ggplotly(g)
             }
-            else { g + geom_histogram(bins = 20, aes(y = ..density.., fill = Class), position = input$position) + 
-                    scale_fill_discrete(labels = c("Non Malignant", "Malignant"))}
+            else { g + geom_histogram(bins = 20, aes(y = ..density.., fill = Category), position = input$position) }
         }else if(input$diagram == "BoxPlot"){
-            g <- ggplot(data = data, aes(x = Class, y= pull(data, xValue))) 
-            g <- g + geom_boxplot() + geom_jitter(aes(color = Class)) + labs(y = xValue, title = paste0("Boxplot for ", xValue)) + 
-                scale_fill_discrete(labels = c("Non Malignant", "Malignant"))
+            g <- ggplot(data = dataDisp, aes(x = Category, y= pull(dataDisp, xValue))) 
+            g <- g + geom_boxplot() + geom_jitter(aes(color = Category)) + 
+                labs(y = xValue, title = paste0("Boxplot for ", xValue))
             ggplotly(g)
         }
     })
@@ -71,23 +62,15 @@ server <- function(input, output, session) {
         summary(data[input$predictor])
     })
     
-    # output$allboxplot <- renderPlot({
-    #     df.m <- melt(data, id.vars = "Class")
-    #     df.m <- df.m %>% drop_na()
-    #     df.m$Class <- as.factor(df.m$Class)
-    #     g <- ggplot(data = df.m, aes(x=variable, y=value)) 
-    #     g + geom_boxplot(aes(fill = Class)) +  stat_summary(fun.y = mean, geom = "line", 
-    #                                                         lwd = 1, aes(group = Class, col = Class))
-    # })
     
     #Boxplot for all predictors together
     output$allboxplot <- renderPlotly({
-        df.m <- melt(data, id.vars = "Class")
+        df.m <- melt(dataDisp, id.vars = "Category")
         df.m <- df.m %>% drop_na()
-        df.m$Class <- as.factor(df.m$Class)
+        df.m$Category <- as.factor(df.m$Category)
         g <- ggplot(data = df.m, aes(x=variable, y=value)) 
-        g <- g + geom_boxplot(aes(fill = Class)) +  stat_summary(fun.y = mean, geom = "line", 
-                                                                 lwd = 1, aes(group = Class, col = Class))
+        g <- g + geom_boxplot(aes(fill = Category)) +  stat_summary(fun.y = mean, geom = "line", 
+                                                                 lwd = 1, aes(group = Category, col = Category))
         g <- g + theme(axis.text.x = element_text(angle = 30, hjust = 1))
         ggplotly(g)
     })
@@ -138,26 +121,6 @@ server <- function(input, output, session) {
             formatStyle(names(as.data.frame(pcRound)), backgroundColor = styleInterval(brks, clrs))
     })
     
-    # observe({
-    #     updateSelectInput(session, "pcs1",
-    #                       choices = pcChoices %>% setdiff(., input$pcs2)
-    #     )
-    # })
-
-    # observe({
-    #     updateSelectInput(session, "pcs2",
-    #                       choices = pcChoices %>% setdiff(., input$pcs1)
-    #     )
-
-    # })
-    
-    # output$firstPC <- renderUI({
-    #     selectInput("pcs1", "First PC:", choices =pcChoices %>% setdiff(., output$secondPC))
-    # })
-    # 
-    # output$secondPC <- renderUI({
-    #     selectInput("pcs2", "Second PC:", choices = pcChoices %>% setdiff(., output$firstPC))
-    # })
     
     #Biplot for PCs
         output$biplot <- renderPlotly({
@@ -170,7 +133,7 @@ server <- function(input, output, session) {
             isolate({
                 simpleBiplot <- ggbiplot(PCs, choices = c(as.numeric(substr(input$pcs1,3,3)),
                                                           as.numeric(substr(input$pcs2,3,3))),
-                                         ellipse=TRUE, labels=data$Class, groups = data$Class)
+                                         ellipse=TRUE, labels=data$Class, groups =data$Class)
                 ggplotly(simpleBiplot)
             })
         })
@@ -187,10 +150,6 @@ server <- function(input, output, session) {
     #Update and calculate kNN model depending on the selection
     observe({
         
-        # validate(
-        #     need(!is.null(input$checkGroup) , 
-        #          'Check at least one Predictor!')
-        # )
         if(is.null(input$checkGroup)){
             showNotification('Check at least one Predictor!', duration = 5, type = "warning")
             return()
@@ -259,44 +218,7 @@ server <- function(input, output, session) {
                                                         nrow = 2, ncol = 2, dimnames = list(row.names, col.names))))
     })
     
-    # observe({
-    #     input_feature_x <- as.symbol(input$featureDisplay_x)
-    #     input_feature_y <- as.symbol(input$featureDisplay_y)
-    #     
-    #     output$distPlotA <- renderPlotly ({
-    #         # plot distribution of selected feature
-    #         ggdistPlotA <- ggplot(data, aes_string(x = input$featureDisplay_x,
-    #                                                fill = "factor(Class)")) +
-    #             geom_histogram(position = "dodge")  +
-    #             labs(x = input$featureDisplay_x,
-    #                  y = "Count") + fte_theme() +
-    #             scale_fill_manual(guide = F,values=c("#7A99AC", "#E4002B"))
-    #         
-    #     })
-    #     
-    #     output$distPlotB <- renderPlotly ({
-    #         ggdistPlotB <- ggplot(data, aes_string(input$featureDisplay_y,
-    #                                                fill = "factor(Class)")) +
-    #             geom_histogram(position = "dodge") +
-    #             labs(x = input$featureDisplay_y,
-    #                  y = "Count") + fte_theme() +
-    #             scale_fill_manual(guide = F,values=c("#7A99AC", "#E4002B"))
-    #         
-    #     })
-    #     
-    #     output$scatterPlotAB <- renderPlotly({
-    #         # plot selected features against one another
-    #         ggscatter <- ggplot(data, aes_string(x = input$featureDisplay_x, 
-    #                                              y = input$featureDisplay_y, 
-    #                                              color = "factor(Class)")) + 
-    #             geom_point(size = 1, position = position_jitter(w = 0.1, h = 0.1)) + 
-    #             labs(x = input$featureDisplay_x,
-    #                  y = input$featureDisplay_y) +
-    #             fte_theme() + 
-    #             scale_color_manual(guide = F, values=c("#7A99AC", "#E4002B"))
-    #         
-    #     })
-    #})
+    
     #Plot the accuracy from all predictors and selected predictors from 10-fold repeated CV
         output$knnAccPlot1 <- renderPlotly({
             f <- list(
@@ -335,7 +257,7 @@ server <- function(input, output, session) {
             
             isolate({
                 
-                withProgress(message = 'Making plot - 10fold Repeated CV',{
+                withProgress(message = 'Generating Plot - 10fold Repeated CV',{
                     
                 trainSet <- data.frame(trainData[,input$checkGroup])
                 testSet <-  data.frame(testData[,input$checkGroup])
@@ -373,10 +295,6 @@ server <- function(input, output, session) {
         #Calculate logistic regression.
         observe({
             
-            # validate(
-            #     need(!is.null(input$checkGroupLog) , 
-            #          'Check at least one Predictor!')
-            # )
             if(is.null(input$checkGroupLog)){
                 showNotification('Check at least one Predictor!', duration = 5, type = "warning")
                 return()
@@ -425,4 +343,4 @@ server <- function(input, output, session) {
         
 }
 
-#shinyApp(ui, server)
+
