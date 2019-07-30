@@ -11,26 +11,13 @@ library(shinydashboard)
 library(tidyverse)
 library(DT)
 library(plotly)
-library(shinyjs)
+#library(shinyjs)
+library(shinycssloaders)
 
 source("source.R")
 
-# appCSS <- "
-# 
-# #loading-content {
-#   position: absolute;
-#   background: #000000;
-#   opacity: 0.9;
-#   z-index: 100;
-#   left: 0;
-#   right: 0;
-#   height: 100%;
-#   text-align: center;
-#   color: #FFFFFF;
-# }
-# "
 
-ui <- dashboardPage(
+ui <- dashboardPage( 
     
     dashboardHeader(title = "ST 558 - Project 3 - Avisek Choudhury", titleWidth=500),
     ## Sidebar content
@@ -107,7 +94,10 @@ ui <- dashboardPage(
                                                     checkboxInput("density", h6("Overlay Density Plot", style = "color:blue;")))
                                ),
                                box(width = 12, title = "Five Point Number Summary",
-                                   verbatimTextOutput("summary"))
+                                   verbatimTextOutput("summary")),
+                               box(width = 12, title = "Classification",
+                                   h4("1 = Malignant"),
+                                   h4("0 = Benign"))
                         ),
                            
                         column(9,
@@ -115,12 +105,12 @@ ui <- dashboardPage(
                                            #Tab for plotting of data.
                                            tabPanel("Data Visualization", icon = icon("chart-line"),
                                                     fluidRow(
-                                                        plotlyOutput("plot1"),
+                                                        withSpinner(plotlyOutput("plot1"), type = 1), 
                                                         br(),
                                                         box(width = 7, title = "Boxplot of All Predictors",
-                                                            plotlyOutput("allboxplot")),
+                                                            withSpinner(plotlyOutput("allboxplot"), type = 7)), 
                                                         box(width = 5, title = "Correlation Plot",
-                                                            plotlyOutput("corrplot"))
+                                                            withSpinner(plotlyOutput("corrplot"), type = 7))
                                                     )
                                            ), 
                                            #Tab for display of data.
@@ -143,22 +133,26 @@ ui <- dashboardPage(
             tabItem(tabName = "unsuper",
                     h3("Principle Component Analysis"),
                     br(),
-                    dataTableOutput("pcaresult"),
+                    withSpinner(dataTableOutput("pcaresult"), type = 1),
                     fluidRow(
                         column(2,
                                box(width=12,title="Select PCs for Biplot",
-                                   selectizeInput("pcs1", "First PC", selected = "PC1", 
-                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2])))),
-                                   selectizeInput("pcs2", "Second PC", selected = "PC2", 
-                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2]))))
+                                   selectizeInput("pcs1", "First PC",
+                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2]))),
+                                                  selected = "PC1"),
+                                   selectizeInput("pcs2", "Second PC",
+                                                  choices =  c(paste0("PC", seq(1, dim(PCs$rotation)[2]))),
+                                                  selected = "PC2")
+                                   # uiOutput("firstPC"),
+                                   # uiOutput("secondPC")
                                )
                         ),
                         column(10,
                                box(width = 5, title = "Biplot for Selected PCs",
-                                   plotlyOutput("biplot")
+                                   withSpinner(plotlyOutput("biplot"), type = 7)
                                ),
                                box(width = 7, title = "Variability with Fewer Uncorrelated Variables",
-                                   plotOutput("varpcplot")
+                                   withSpinner(plotOutput("varpcplot"), type = 7)
                                )
                         )
                     )
@@ -189,10 +183,10 @@ ui <- dashboardPage(
                                                     fluidRow(
                                                         box(width = 5, title = h4(strong("kNN Model Fit from 10-fold 
                                                         Repeated CV with 3 Repetition")),
-                                                            verbatimTextOutput("knnfrom10Fold")),
+                                                            withSpinner(verbatimTextOutput("knnfrom10Fold"), type = 5)),
                                                         box(width = 7, 
                                                             title = strong("kNN Accuracy Plot - From 10 fold Repeated CV"),
-                                                            plotlyOutput("knnAccuracy"),
+                                                            withSpinner(plotlyOutput("knnAccuracy"), type = 7),
                                                             hr(),
                                                             h4("Confusion Matrix from 10-fold Repeated CV"),
                                                             tableOutput('confusionMatrix10'),
@@ -239,7 +233,7 @@ ui <- dashboardPage(
                                                                             style = "background-color:#3c8dbc; color: white"),
                                                                h4(strong("Accuracy Plot with 
                                                                          10-fold Repeated CV Using SELECTED Predictors")),
-                                                               plotlyOutput("knnAccPlot2")
+                                                               withSpinner(plotlyOutput("knnAccPlot2"), type = 7)
                                                         )
                                                     )
                                                     # fluidRow(

@@ -35,8 +35,7 @@ server <- function(input, output, session) {
         input$position
         input$pcs1
         input$pcs2
-        
-        
+
     })
     
     
@@ -54,13 +53,16 @@ server <- function(input, output, session) {
             g <- ggplot(data = data, aes(x = pull(data, xValue))) + labs( x = xValue, title = paste0("Histogram for ", xValue))
             if (input$density) {
                 g <- g + geom_histogram(bins = 20, aes(y = ..density.., fill = Class), position = input$position) + 
-                    geom_density(adjust = 0.25, alpha = 0.5, aes(fill=Class), position = input$position)
+                    geom_density(adjust = 0.25, alpha = 0.5, aes(fill=Class), position = input$position) + 
+                    scale_fill_discrete(labels = c("Non Malignant", "Malignant"))
                 ggplotly(g)
             }
-            else { g + geom_histogram(bins = 20, aes(y = ..density.., fill = Class), position = input$position) }
+            else { g + geom_histogram(bins = 20, aes(y = ..density.., fill = Class), position = input$position) + 
+                    scale_fill_discrete(labels = c("Non Malignant", "Malignant"))}
         }else if(input$diagram == "BoxPlot"){
             g <- ggplot(data = data, aes(x = Class, y= pull(data, xValue))) 
-            g <- g + geom_boxplot() + geom_jitter(aes(color = Class)) + labs(y = xValue, title = paste0("Boxplot for ", xValue))
+            g <- g + geom_boxplot() + geom_jitter(aes(color = Class)) + labs(y = xValue, title = paste0("Boxplot for ", xValue)) + 
+                scale_fill_discrete(labels = c("Non Malignant", "Malignant"))
             ggplotly(g)
         }
     })
@@ -86,6 +88,7 @@ server <- function(input, output, session) {
         g <- ggplot(data = df.m, aes(x=variable, y=value)) 
         g <- g + geom_boxplot(aes(fill = Class)) +  stat_summary(fun.y = mean, geom = "line", 
                                                                  lwd = 1, aes(group = Class, col = Class))
+        g <- g + theme(axis.text.x = element_text(angle = 30, hjust = 1))
         ggplotly(g)
     })
     
@@ -127,17 +130,51 @@ server <- function(input, output, session) {
     #Display the PCs in data table
     output$pcaresult <- renderDataTable ({
         pcRound <- round(PCs$rotation,3)
-        datatable(as.data.frame(pcRound), rownames= TRUE)
+        # create 19 breaks and 20 rgb color values ranging from white to red
+        brks <- quantile(as.data.frame(pcRound), probs = seq(.05, .95, .05), na.rm = TRUE)
+        clrs <- round(seq(255, 40, length.out = length(brks) + 1), 0) %>%
+            {paste0("rgb(255,", ., ",", ., ")")}
+        datatable(as.data.frame(pcRound), rownames= TRUE) %>% 
+            formatStyle(names(as.data.frame(pcRound)), backgroundColor = styleInterval(brks, clrs))
     })
+    
+    # observe({
+    #     updateSelectInput(session, "pcs1",
+    #                       choices = pcChoices %>% setdiff(., input$pcs2)
+    #     )
+    # })
+
+    # observe({
+    #     updateSelectInput(session, "pcs2",
+    #                       choices = pcChoices %>% setdiff(., input$pcs1)
+    #     )
+
+    # })
+    
+    # output$firstPC <- renderUI({
+    #     selectInput("pcs1", "First PC:", choices =pcChoices %>% setdiff(., output$secondPC))
+    # })
+    # 
+    # output$secondPC <- renderUI({
+    #     selectInput("pcs2", "Second PC:", choices = pcChoices %>% setdiff(., output$firstPC))
+    # })
     
     #Biplot for PCs
-    output$biplot <- renderPlotly({
-        simpleBiplot <- ggbiplot(PCs, choices = c(as.numeric(substr(input$pcs1,3,3)), 
-                                                  as.numeric(substr(input$pcs2,3,3))), 
-                                 ellipse=TRUE, labels=data$Class, groups = data$Class)
-        ggplotly(simpleBiplot)
-    })
-    
+        output$biplot <- renderPlotly({
+
+            if(input$pcs1 == input$pcs2){
+                showNotification('Select 2 Different PCs for Biplot!', duration = 5, type = "error")
+                return()
+            }
+
+            isolate({
+                simpleBiplot <- ggbiplot(PCs, choices = c(as.numeric(substr(input$pcs1,3,3)),
+                                                          as.numeric(substr(input$pcs2,3,3))),
+                                         ellipse=TRUE, labels=data$Class, groups = data$Class)
+                ggplotly(simpleBiplot)
+            })
+        })
+   
     output$varpcplot <- renderPlot({
         par(mfrow = c(1, 2))
         plot(PCs$sdev^2/sum(PCs$sdev^2), xlab = "Principal Component",
@@ -298,6 +335,8 @@ server <- function(input, output, session) {
             
             isolate({
                 
+                withProgress(message = 'Making plot - 10fold Repeated CV',{
+                    
                 trainSet <- data.frame(trainData[,input$checkGroup])
                 testSet <-  data.frame(testData[,input$checkGroup])
                 trainSet['Class'] <- trainData$Class
@@ -327,7 +366,7 @@ server <- function(input, output, session) {
                 plot_ly(knn.model.upd$results, x=knn.model.upd$results$k, 
                         y=knn.model.upd$results$Accuracy, mode = 'lines+markers') %>%
                     layout(xaxis = x, yaxis = y)
-                
+                })
             })
         })
             
