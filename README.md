@@ -1,9 +1,3 @@
-To start this Shiny app from RStudio run the following commands:
-
-library(shiny)
-
-runGitHub('avisek2018/breastcancer')
-
 These are the package needed to run the App:
 
 library(devtools)
@@ -31,3 +25,10 @@ install.packages("class")
 install.packages("caret")
 
 install.packages("RColorBrewer")
+
+
+To start this Shiny app from RStudio run the following commands:
+
+library(shiny)
+
+runGitHub('avisek2018/breastcancer')
